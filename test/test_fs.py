@@ -28,8 +28,10 @@ import threading
 from util import fuse_test_marker, wait_for_mount, umount, cleanup
 
 pytestmark = fuse_test_marker()
-if sys.platform == 'darwin':
-    pytestmark = [pytestmark, pytest.mark.skip(reason="xattr not supported on macOS FUSE")]
+darwin_invalidation_skip = pytest.mark.skipif(
+    sys.platform == 'darwin',
+    reason="FUSE cache invalidation unreliable on macOS"
+)
 
 def get_mp():
     # We can't use forkserver because we have to make sure
@@ -65,6 +67,7 @@ def testfs(tmpdir):
         else:
             umount(mount_process, mnt_dir)
 
+@darwin_invalidation_skip
 def test_invalidate_entry(testfs):
     (mnt_dir, fs_state) = testfs
     path = os.path.join(mnt_dir, 'message')
@@ -76,11 +79,12 @@ def test_invalidate_entry(testfs):
 
     # Hardcoded sleeptimes - sorry! Needed because of the special semantics of
     # invalidate_entry()
-    pyfuse3.setxattr(path, 'command', b'forget_entry')
+    pyfuse3.setxattr(mnt_dir, 'command', b'forget_entry')
     time.sleep(1.1)
     os.stat(path)
     assert fs_state.lookup_called
 
+@darwin_invalidation_skip
 def test_invalidate_inode(testfs):
     (mnt_dir, fs_state) = testfs
     with open(os.path.join(mnt_dir, 'message'), 'r') as fh:
@@ -91,21 +95,21 @@ def test_invalidate_inode(testfs):
         assert fh.read() == 'hello world\n'
         assert not fs_state.read_called
 
-        path = os.path.join(mnt_dir, 'message')
-        pyfuse3.setxattr(path, 'command', b'forget_inode')
+        pyfuse3.setxattr(mnt_dir, 'command', b'forget_inode')
         fh.seek(0)
         assert fh.read() == 'hello world\n'
         assert fs_state.read_called
 
+@darwin_invalidation_skip
 def test_notify_store(testfs):
     (mnt_dir, fs_state) = testfs
-    path = os.path.join(mnt_dir, 'message')
-    with open(path, 'r') as fh:
-        pyfuse3.setxattr(path, 'command', b'store')
+    with open(os.path.join(mnt_dir, 'message'), 'r') as fh:
+        pyfuse3.setxattr(mnt_dir, 'command', b'store')
         fs_state.read_called = False
         assert fh.read() == 'hello world\n'
         assert not fs_state.read_called
 
+@darwin_invalidation_skip
 def test_entry_timeout(testfs):
     (mnt_dir, fs_state) = testfs
     fs_state.entry_timeout = 1
@@ -122,6 +126,7 @@ def test_entry_timeout(testfs):
     os.stat(path)
     assert fs_state.lookup_called
 
+@darwin_invalidation_skip
 def test_attr_timeout(testfs):
     (mnt_dir, fs_state) = testfs
     fs_state.attr_timeout = 1
@@ -148,8 +153,7 @@ def test_terminate(tmpdir):
         mount_process.start()
         try:
             wait_for_mount(mount_process, mnt_dir)
-            path = os.path.join(mnt_dir, 'message')
-            pyfuse3.setxattr(path, 'command', b'terminate')
+            pyfuse3.setxattr(mnt_dir, 'command', b'terminate')
             mount_process.join(5)
             assert mount_process.exitcode is not None
         except:
@@ -247,8 +251,7 @@ class Fs(pyfuse3.Operations):
         return stat_
 
     async def setxattr(self, inode, name, value, ctx):
-        print(f"DEBUG: setxattr called with inode={inode}, name={name}", file=sys.stderr)
-        if inode != self.hello_inode or name != b'command':
+        if inode != pyfuse3.ROOT_INODE or name != b'command':
             raise FUSEError(errno.ENOTSUP)
 
         if value == b'forget_entry':
