@@ -31,7 +31,7 @@ cdef class _Container:
     cdef uint64_t fh
 
 cdef void fuse_init (void *userdata, fuse_conn_info *conn):
-    if not conn.capable & FUSE_CAP_READDIRPLUS:
+    if PLATFORM != PLATFORM_DARWIN and not (conn.capable & FUSE_CAP_READDIRPLUS):
         raise RuntimeError('Kernel too old, pyfuse3 requires kernel 3.9 or newer!')
     conn.want &= ~(<unsigned> FUSE_CAP_READDIRPLUS_AUTO)
 
@@ -564,6 +564,7 @@ cdef class ReaddirToken:
     cdef char *buf_start
     cdef char *buf
     cdef size_t size
+    cdef bint is_plus
 
 cdef void fuse_readdirplus (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
                             fuse_file_info *fi):
@@ -581,6 +582,7 @@ async def fuse_readdirplus_async (_Container c):
     token.buf_start = NULL
     token.size = c.size
     token.req = c.req
+    token.is_plus = True
 
     try:
         await operations.readdir(c.fh, c.off, token)
@@ -596,6 +598,40 @@ async def fuse_readdirplus_async (_Container c):
 
     if ret != 0:
         log.error('fuse_readdirplus(): fuse_reply_* failed with %s', strerror(-ret))
+
+
+cdef void fuse_readdir (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
+                        fuse_file_info *fi):
+    global py_retval
+    cdef _Container c = _Container()
+    c.req = req
+    c.size = size
+    c.off = off
+    c.fh = fi.fh
+    save_retval(fuse_readdir_async(c))
+
+async def fuse_readdir_async (_Container c):
+    cdef int ret
+    cdef ReaddirToken token = ReaddirToken()
+    token.buf_start = NULL
+    token.size = c.size
+    token.req = c.req
+    token.is_plus = False
+
+    try:
+        await operations.readdir(c.fh, c.off, token)
+    except FUSEError as e:
+        ret = fuse_reply_err(c.req, e.errno)
+    else:
+        if token.buf_start == NULL:
+            ret = fuse_reply_buf(c.req, NULL, 0)
+        else:
+            ret = fuse_reply_buf(c.req, token.buf_start, c.size - token.size)
+    finally:
+        stdlib.free(token.buf_start)
+
+    if ret != 0:
+        log.error('fuse_readdir(): fuse_reply_* failed with %s', strerror(-ret))
 
 
 cdef void fuse_releasedir (fuse_req_t req, fuse_ino_t ino, fuse_file_info *fi):

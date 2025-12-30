@@ -106,6 +106,18 @@ class TestFs(pyfuse3.Operations):
         assert fh == self.hello_inode
         return self.hello_data[off:off+size]
 
+    async def statfs(self, ctx):
+        stat_ = pyfuse3.StatvfsData()
+        stat_.f_bsize = 512
+        stat_.f_frsize = 512
+        stat_.f_blocks = 1000
+        stat_.f_bfree = 1000
+        stat_.f_bavail = 1000
+        stat_.f_files = 10
+        stat_.f_ffree = 10
+        stat_.f_favail = 10
+        return stat_
+
 def init_logging(debug=False):
     formatter = logging.Formatter('%(asctime)s.%(msecs)03d %(threadName)s: '
                                   '[%(name)s] %(message)s', datefmt="%Y-%m-%d %H:%M:%S")

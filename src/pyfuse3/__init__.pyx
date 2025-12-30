@@ -1044,8 +1044,12 @@ def readdir_reply(ReaddirToken token, name, EntryAttributes attr, off_t next_id)
         token.buf = token.buf_start
 
     cname = PyBytes_AsString(name)
-    len_ = fuse_add_direntry_plus(token.req, token.buf, token.size,
-                                  cname, &attr.fuse_param, next_id)
+    if token.is_plus:
+        len_ = fuse_add_direntry_plus(token.req, token.buf, token.size,
+                                      cname, &attr.fuse_param, next_id)
+    else:
+        len_ = fuse_add_direntry(token.req, token.buf, token.size,
+                                 cname, attr.attr, next_id)
     if len_ > token.size:
         return False
 

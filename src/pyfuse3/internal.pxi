@@ -57,6 +57,7 @@ cdef void init_fuse_ops():
     fuse_ops.release = fuse_release
     fuse_ops.fsync = fuse_fsync
     fuse_ops.opendir = fuse_opendir
+    fuse_ops.readdir = fuse_readdir
     fuse_ops.readdirplus = fuse_readdirplus
     fuse_ops.releasedir = fuse_releasedir
     fuse_ops.fsyncdir = fuse_fsyncdir
@@ -204,6 +205,7 @@ async def _wait_fuse_readable():
     Return True if the fd is readable, or False if the main loop
     should terminate.
     '''
+    import select
 
     if worker_data.read_lock is None:
         worker_data.read_lock = trio.Lock()
@@ -218,7 +220,10 @@ async def _wait_fuse_readable():
                 log.debug('FUSE session exit flag set while waiting for FUSE fd '
                           'to become readable.')
                 return False
-            await trio.lowlevel.wait_readable(session_fd)
+            if PLATFORM == PLATFORM_DARWIN:
+                await trio.to_thread.run_sync(select.select, [session_fd], [], [])
+            else:
+                await trio.lowlevel.wait_readable(session_fd)
             #log.debug('%s: fuse fd readable, unparking next task.', name)
     except trio.ClosedResourceError:
         log.debug('FUSE fd about to be closed.')
