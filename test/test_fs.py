@@ -243,11 +243,11 @@ class Fs(pyfuse3.Operations):
         stat_.f_bsize = 512
         stat_.f_frsize = 512
         stat_.f_blocks = 1000
-        stat_.f_bfree = 1000
-        stat_.f_bavail = 1000
-        stat_.f_files = 10
-        stat_.f_ffree = 10
-        stat_.f_favail = 10
+        stat_.f_bfree = 500
+        stat_.f_bavail = 200
+        stat_.f_files = 100
+        stat_.f_ffree = 50
+        stat_.f_favail = 20
         return stat_
 
     async def setxattr(self, inode, name, value, ctx):
