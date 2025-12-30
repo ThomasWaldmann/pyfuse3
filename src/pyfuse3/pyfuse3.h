@@ -54,7 +54,7 @@ static inline int syncfs(int fd) {
 #define st_atimespec atimespec
 #define st_mtimespec mtimespec
 #define st_ctimespec ctimespec
-#define st_birthtimespec crtimespec
+#define st_birthtimespec btimespec
 
 #else
 /* Linux / generic definitions */
