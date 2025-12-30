@@ -27,7 +27,7 @@ cdef class _Container:
     cdef mode_t   mode
     cdef off_t    off
     cdef size_t   size
-    cdef struct_stat stat
+    cdef fuse_stat_t stat
     cdef uint64_t fh
 
 cdef void fuse_init (void *userdata, fuse_conn_info *conn):
@@ -111,7 +111,7 @@ async def fuse_getattr_async (_Container c):
         log.error('fuse_getattr(): fuse_reply_* failed with %s', strerror(-ret))
 
 
-cdef void fuse_setattr (fuse_req_t req, fuse_ino_t ino, struct_stat *stat,
+cdef void fuse_setattr (fuse_req_t req, fuse_ino_t ino, fuse_stat_t *stat,
                         int to_set, fuse_file_info *fi):
     cdef _Container c = _Container()
     c.req = req
@@ -129,13 +129,13 @@ async def fuse_setattr_async (_Container c, fh):
     cdef timespec now
     cdef EntryAttributes entry
     cdef SetattrFields fields
-    cdef struct_stat *attr
+    cdef fuse_stat_t *attr
     cdef int to_set = c.flags
 
     ctx = get_request_context(c.req)
     entry = EntryAttributes()
     fields = SetattrFields.__new__(SetattrFields)
-    string.memcpy(entry.attr, &c.stat, sizeof(struct_stat))
+    string.memcpy(entry.attr, &c.stat, sizeof(fuse_stat_t))
 
     attr = entry.attr
     if to_set & (FUSE_SET_ATTR_ATIME_NOW | FUSE_SET_ATTR_MTIME_NOW):

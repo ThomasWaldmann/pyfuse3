@@ -13,6 +13,8 @@ cdef extern from "pyfuse3.h":
         PLATFORM_LINUX
         PLATFORM_BSD
         PLATFORM_DARWIN
+    int RENAME_EXCHANGE
+    int RENAME_NOREPLACE
 
 ###########
 # C IMPORTS
@@ -20,7 +22,7 @@ cdef extern from "pyfuse3.h":
 
 from fuse_lowlevel cimport *
 from .macros cimport *
-from posix.stat cimport struct_stat, S_IFMT, S_IFDIR, S_IFREG
+from posix.stat cimport S_IFMT, S_IFDIR, S_IFREG
 from posix.types cimport mode_t, dev_t, off_t
 from libc.stdint cimport uint32_t
 from libc.stdlib cimport const_char
@@ -41,12 +43,6 @@ cimport libc_extra
 ########################
 # EXTERNAL DEFINITIONS #
 ########################
-
-
-cdef extern from "<linux/fs.h>" nogil:
-  enum:
-    RENAME_EXCHANGE
-    RENAME_NOREPLACE
 
 cdef extern from "Python.h" nogil:
     int PY_SSIZE_T_MAX
@@ -178,7 +174,7 @@ cdef class EntryAttributes:
     # Attributes are documented in rst/data.rst
 
     cdef fuse_entry_param fuse_param
-    cdef struct_stat *attr
+    cdef fuse_stat_t *attr
 
     def __cinit__(self):
         string.memset(&self.fuse_param, 0, sizeof(fuse_entry_param))

@@ -27,7 +27,7 @@ def fuse_test_marker():
 
     if platform.system() == 'Darwin':
         # No working autodetection, just assume it will work.
-        return
+        return pytest.mark.uses_fuse()
     skip = lambda x: pytest.mark.skip(reason=x)
 
     fusermount_path = shutil.which('fusermount')

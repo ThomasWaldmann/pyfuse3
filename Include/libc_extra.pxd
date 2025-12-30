@@ -60,5 +60,5 @@ cdef extern from "xattr.h" nogil:
 cdef extern from "gettime.h" nogil:
     int gettime_realtime(timespec *tp)
 
-cdef extern from "<unistd.h>" nogil:
+cdef extern from "pyfuse3.h" nogil:
     int syncfs(int fd)
