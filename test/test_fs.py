@@ -28,6 +28,8 @@ import threading
 from util import fuse_test_marker, wait_for_mount, umount, cleanup
 
 pytestmark = fuse_test_marker()
+if sys.platform == 'darwin':
+    pytestmark = [pytestmark, pytest.mark.skip(reason="xattr not supported on macOS FUSE")]
 
 def get_mp():
     # We can't use forkserver because we have to make sure
@@ -74,7 +76,7 @@ def test_invalidate_entry(testfs):
 
     # Hardcoded sleeptimes - sorry! Needed because of the special semantics of
     # invalidate_entry()
-    pyfuse3.setxattr(mnt_dir, 'command', b'forget_entry')
+    pyfuse3.setxattr(path, 'command', b'forget_entry')
     time.sleep(1.1)
     os.stat(path)
     assert fs_state.lookup_called
@@ -89,15 +91,17 @@ def test_invalidate_inode(testfs):
         assert fh.read() == 'hello world\n'
         assert not fs_state.read_called
 
-        pyfuse3.setxattr(mnt_dir, 'command', b'forget_inode')
+        path = os.path.join(mnt_dir, 'message')
+        pyfuse3.setxattr(path, 'command', b'forget_inode')
         fh.seek(0)
         assert fh.read() == 'hello world\n'
         assert fs_state.read_called
 
 def test_notify_store(testfs):
     (mnt_dir, fs_state) = testfs
-    with open(os.path.join(mnt_dir, 'message'), 'r') as fh:
-        pyfuse3.setxattr(mnt_dir, 'command', b'store')
+    path = os.path.join(mnt_dir, 'message')
+    with open(path, 'r') as fh:
+        pyfuse3.setxattr(path, 'command', b'store')
         fs_state.read_called = False
         assert fh.read() == 'hello world\n'
         assert not fs_state.read_called
@@ -144,7 +148,8 @@ def test_terminate(tmpdir):
         mount_process.start()
         try:
             wait_for_mount(mount_process, mnt_dir)
-            pyfuse3.setxattr(mnt_dir, 'command', b'terminate')
+            path = os.path.join(mnt_dir, 'message')
+            pyfuse3.setxattr(path, 'command', b'terminate')
             mount_process.join(5)
             assert mount_process.exitcode is not None
         except:
@@ -229,8 +234,21 @@ class Fs(pyfuse3.Operations):
         self.status.read_called = True
         return self.hello_data[off:off+size]
 
+    async def statfs(self, ctx):
+        stat_ = pyfuse3.StatvfsData()
+        stat_.f_bsize = 512
+        stat_.f_frsize = 512
+        stat_.f_blocks = 1000
+        stat_.f_bfree = 1000
+        stat_.f_bavail = 1000
+        stat_.f_files = 10
+        stat_.f_ffree = 10
+        stat_.f_favail = 10
+        return stat_
+
     async def setxattr(self, inode, name, value, ctx):
-        if inode != pyfuse3.ROOT_INODE or name != b'command':
+        print(f"DEBUG: setxattr called with inode={inode}, name={name}", file=sys.stderr)
+        if inode != self.hello_inode or name != b'command':
             raise FUSEError(errno.ENOTSUP)
 
         if value == b'forget_entry':

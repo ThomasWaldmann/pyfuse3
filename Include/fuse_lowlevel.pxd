@@ -116,10 +116,8 @@ cdef extern from "<fuse_lowlevel.h>" nogil:
         void (*fsyncdir) (fuse_req_t req, fuse_ino_t ino, int datasync,
                           fuse_file_info *fi) except *
         void (*statfs) (fuse_req_t req, fuse_ino_t ino) except *
-        void (*setxattr) (fuse_req_t req, fuse_ino_t ino, const_char *name,
-                          const_char *value, size_t size, int flags) except *
-        void (*getxattr) (fuse_req_t req, fuse_ino_t ino, const_char *name,
-                          size_t size) except *
+        void *setxattr
+        void *getxattr
         void (*listxattr) (fuse_req_t req, fuse_ino_t ino, size_t size) except *
         void (*removexattr) (fuse_req_t req, fuse_ino_t ino, const_char *name) except *
         void (*access) (fuse_req_t req, fuse_ino_t ino, int mask) except *

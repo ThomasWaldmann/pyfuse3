@@ -1002,6 +1002,9 @@ def get_sup_groups(pid):
     Returns a set.
     '''
 
+    if pid == os.getpid():
+        return set(os.getgroups())
+
     with open('/proc/%d/status' % pid, 'r') as fh:
         for line in fh:
             if line.startswith('Groups:'):

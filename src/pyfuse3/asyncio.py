@@ -111,5 +111,11 @@ class _Nursery:
             assert len(pending) == 0
 
 
+
+class to_thread:
+    @staticmethod
+    async def run_sync(func: Callable[..., Any], *args: Any) -> Any:
+        return await asyncio.to_thread(func, *args)
+
 def open_nursery() -> _Nursery:
     return _Nursery()

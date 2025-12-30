@@ -62,8 +62,12 @@ cdef void init_fuse_ops():
     fuse_ops.releasedir = fuse_releasedir
     fuse_ops.fsyncdir = fuse_fsyncdir
     fuse_ops.statfs = fuse_statfs
-    ASSIGN_NOT_DARWIN(fuse_ops.setxattr, &fuse_setxattr)
-    ASSIGN_NOT_DARWIN(fuse_ops.getxattr, &fuse_getxattr)
+    if PLATFORM == PLATFORM_DARWIN:
+        fuse_ops.setxattr = <void *> &fuse_setxattr_darwin
+        fuse_ops.getxattr = <void *> &fuse_getxattr_darwin
+    else:
+        fuse_ops.setxattr = <void *> &fuse_setxattr
+        fuse_ops.getxattr = <void *> &fuse_getxattr
     fuse_ops.listxattr = fuse_listxattr
     fuse_ops.removexattr = fuse_removexattr
     fuse_ops.access = fuse_access

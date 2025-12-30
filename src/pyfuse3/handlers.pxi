@@ -899,3 +899,12 @@ async def fuse_create_async (_Container c, name):
 
     if ret != 0:
         log.error('fuse_create(): fuse_reply_* failed with %s', strerror(-ret))
+
+cdef void fuse_setxattr_darwin (fuse_req_t req, fuse_ino_t ino, const_char *name,
+                                const_char *value, size_t size, int flags,
+                                uint32_t position):
+    fuse_setxattr(req, ino, name, value, size, flags)
+
+cdef void fuse_getxattr_darwin (fuse_req_t req, fuse_ino_t ino, const_char *name,
+                                size_t size, uint32_t position):
+    fuse_getxattr(req, ino, name, size)
