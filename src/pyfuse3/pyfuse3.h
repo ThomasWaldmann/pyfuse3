@@ -69,6 +69,7 @@ typedef struct fuse_entry_param pyfuse3_entry_param_t;
 #endif
 
 #include <fuse.h>
+#include <fuse_lowlevel.h>
 
 #if PLATFORM == PLATFORM_LINUX
 #include <linux/fs.h>

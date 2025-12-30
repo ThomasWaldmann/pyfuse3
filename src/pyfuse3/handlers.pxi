@@ -686,6 +686,11 @@ cdef void fuse_statfs (fuse_req_t req, fuse_ino_t ino):
 async def fuse_statfs_async (_Container c):
     cdef int ret
     cdef StatvfsData stats
+    IF UNAME_SYSNAME == "Darwin":
+        cdef libc_extra.statfs st
+    ELSE:
+        cdef libc_extra.statvfs st_vfs
+
 
     ctx = get_request_context(c.req)
     try:
@@ -693,7 +698,34 @@ async def fuse_statfs_async (_Container c):
     except FUSEError as e:
         ret = fuse_reply_err(c.req, e.errno)
     else:
-        ret = fuse_reply_statfs(c.req, &stats.stat)
+        IF UNAME_SYSNAME == "Darwin":
+            libc_extra.memset(&st, 0, sizeof(st))
+            st.f_bsize = stats.f_bsize
+            st.f_iosize = stats.f_frsize
+            st.f_blocks = stats.f_blocks
+            st.f_bfree = stats.f_bfree
+            st.f_bavail = stats.f_bavail
+            st.f_files = stats.f_files
+            st.f_ffree = stats.f_ffree
+            # f_favail not in statfs on macOS usually, or mapped to f_ffree
+            # f_fsid is type specific
+            # f_flag
+            st.f_fssubtype = 0
+            ret = fuse_reply_statfs(c.req, &st)
+        ELSE:
+            libc_extra.memset(&st_vfs, 0, sizeof(st_vfs))
+            st_vfs.f_bsize = stats.f_bsize
+            st_vfs.f_frsize = stats.f_frsize
+            st_vfs.f_blocks = stats.f_blocks
+            st_vfs.f_bfree = stats.f_bfree
+            st_vfs.f_bavail = stats.f_bavail
+            st_vfs.f_files = stats.f_files
+            st_vfs.f_ffree = stats.f_ffree
+            st_vfs.f_favail = stats.f_favail
+            st_vfs.f_fsid = stats.f_fsid
+            st_vfs.f_flag = stats.f_flag
+            st_vfs.f_namemax = stats.f_namemax
+            ret = fuse_reply_statfs(c.req, &st_vfs)
 
     if ret != 0:
         log.error('fuse_statfs(): fuse_reply_* failed with %s', strerror(-ret))

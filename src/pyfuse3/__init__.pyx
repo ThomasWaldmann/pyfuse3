@@ -391,80 +391,36 @@ cdef class StatvfsData:
     struct, see :manpage:`statvfs(2)` for details.
     '''
 
-    cdef statvfs stat
+    cdef public unsigned long long f_bsize
+    cdef public unsigned long long f_frsize
+    cdef public unsigned long long f_blocks
+    cdef public unsigned long long f_bfree
+    cdef public unsigned long long f_bavail
+    cdef public unsigned long long f_files
+    cdef public unsigned long long f_ffree
+    cdef public unsigned long long f_favail
+    cdef public unsigned long long f_fsid
+    cdef public unsigned long long f_flag
+    cdef public unsigned long long f_namemax
 
     def __cinit__(self):
-        string.memset(&self.stat, 0, sizeof(statvfs))
-
-    @property
-    def f_bsize(self):
-        return self.stat.f_bsize
-    @f_bsize.setter
-    def f_bsize(self, val):
-        self.stat.f_bsize = val
-
-    @property
-    def f_frsize(self):
-        return self.stat.f_frsize
-    @f_frsize.setter
-    def f_frsize(self, val):
-        self.stat.f_frsize = val
-
-    @property
-    def f_blocks(self):
-        return self.stat.f_blocks
-    @f_blocks.setter
-    def f_blocks(self, val):
-        self.stat.f_blocks = val
-
-    @property
-    def f_bfree(self):
-        return self.stat.f_bfree
-    @f_bfree.setter
-    def f_bfree(self, val):
-        self.stat.f_bfree = val
-
-    @property
-    def f_bavail(self):
-        return self.stat.f_bavail
-    @f_bavail.setter
-    def f_bavail(self, val):
-        self.stat.f_bavail = val
-
-    @property
-    def f_files(self):
-        return self.stat.f_files
-    @f_files.setter
-    def f_files(self, val):
-        self.stat.f_files = val
-
-    @property
-    def f_ffree(self):
-        return self.stat.f_ffree
-    @f_ffree.setter
-    def f_ffree(self, val):
-        self.stat.f_ffree = val
-
-    @property
-    def f_favail(self):
-        return self.stat.f_favail
-    @f_favail.setter
-    def f_favail(self, val):
-        self.stat.f_favail = val
-
-    @property
-    def f_namemax(self):
-        return self.stat.f_namemax
-    @f_namemax.setter
-    def f_namemax(self, val):
-        self.stat.f_namemax = val
-
+        self.f_bsize = 0
+        self.f_frsize = 0
+        self.f_blocks = 0
+        self.f_bfree = 0
+        self.f_bavail = 0
+        self.f_files = 0
+        self.f_ffree = 0
+        self.f_favail = 0
+        self.f_fsid = 0
+        self.f_flag = 0
+        self.f_namemax = 0
     # Pickling and copy support
     def __getstate__(self):
         state = dict()
         for k in ('f_bsize', 'f_frsize', 'f_blocks', 'f_bfree',
                   'f_bavail', 'f_files', 'f_ffree', 'f_favail',
-                  'f_namemax'):
+                  'f_fsid', 'f_flag', 'f_namemax'):
             state[k] = getattr(self, k)
         return state
 

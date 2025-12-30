@@ -12,7 +12,7 @@ the terms of the GNU LGPL.
 from fuse_common cimport *
 from fuse_common cimport *
 from posix.types cimport *
-from libc_extra cimport statvfs
+cimport libc_extra
 from libc.stdlib cimport const_char
 from libc.stdint cimport uint32_t
 from posix.time cimport timespec
@@ -149,7 +149,10 @@ cdef extern from "<fuse_lowlevel.h>" nogil:
     int fuse_reply_buf(fuse_req_t req, const_char *buf, size_t size)
     int fuse_reply_data(fuse_req_t req, fuse_bufvec *bufv,
                         fuse_buf_copy_flags flags)
-    int fuse_reply_statfs(fuse_req_t req, statvfs *stbuf)
+    IF UNAME_SYSNAME == "Darwin":
+        int fuse_reply_statfs(fuse_req_t req, libc_extra.statfs *stbuf)
+    ELSE:
+        int fuse_reply_statfs(fuse_req_t req, libc_extra.statvfs *stbuf)
     int fuse_reply_xattr(fuse_req_t req, size_t count)
 
     size_t fuse_add_direntry(fuse_req_t req, const_char *buf, size_t bufsize,
