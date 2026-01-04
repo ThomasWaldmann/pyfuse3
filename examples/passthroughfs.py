@@ -339,6 +339,54 @@ class Operations(pyfuse3.Operations):
 
         return await self.getattr(inode)
 
+    async def getxattr(self, inode, name, ctx):
+        name = fsdecode(name)
+        if inode in self._inode_fd_map:
+            path_or_fd = self._inode_fd_map[inode]
+        else:
+            path_or_fd = self._inode_to_path(inode)
+
+        try:
+            return os.getxattr(path_or_fd, name, follow_symlinks=False)
+        except OSError as exc:
+            raise FUSEError(exc.errno)
+
+    async def setxattr(self, inode, name, value, ctx):
+        name = fsdecode(name)
+        if inode in self._inode_fd_map:
+            path_or_fd = self._inode_fd_map[inode]
+        else:
+            path_or_fd = self._inode_to_path(inode)
+
+        try:
+            os.setxattr(path_or_fd, name, value, follow_symlinks=False)
+        except OSError as exc:
+            raise FUSEError(exc.errno)
+
+    async def listxattr(self, inode, ctx):
+        if inode in self._inode_fd_map:
+            path_or_fd = self._inode_fd_map[inode]
+        else:
+            path_or_fd = self._inode_to_path(inode)
+
+        try:
+            names = os.listxattr(path_or_fd, follow_symlinks=False)
+            return [fsencode(name) for name in names]
+        except OSError as exc:
+            raise FUSEError(exc.errno)
+
+    async def removexattr(self, inode, name, ctx):
+        name = fsdecode(name)
+        if inode in self._inode_fd_map:
+            path_or_fd = self._inode_fd_map[inode]
+        else:
+            path_or_fd = self._inode_to_path(inode)
+
+        try:
+            os.removexattr(path_or_fd, name, follow_symlinks=False)
+        except OSError as exc:
+            raise FUSEError(exc.errno)
+
     async def mknod(self, inode_p, name, mode, rdev, ctx):
         path = os.path.join(self._inode_to_path(inode_p), fsdecode(name))
         try:
