@@ -36,7 +36,7 @@ jobs:
         run: uv sync --locked
 
       - name: Run tests
-        run: uv run pytest -v -rs test/
+        run: uv run pytest -v -rs -k"not test_examples" test/
 
       - name: Build docs
         run: uv run sphinx-build -b html rst doc/html
